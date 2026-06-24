@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     app_env: str = Field(default="development")
     app_host: str = Field(default="0.0.0.0")
     app_port: int = Field(default=8000)
+    port: int = Field(default=8000)  # Render sets $PORT automatically
     log_level: str = Field(default="INFO")
 
     # CORS
