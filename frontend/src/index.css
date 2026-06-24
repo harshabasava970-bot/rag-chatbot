@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS variables for toast theming */
+:root {
+  --toast-bg: #fff;
+  --toast-color: #374151;
+}
+
+.dark {
+  --toast-bg: #1f2937;
+  --toast-color: #f9fafb;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-gray-600 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500 dark:bg-gray-500;
+}
+
+/* Prose styles for chat messages */
+.chat-prose p { @apply mb-2 last:mb-0; }
+.chat-prose ul { @apply list-disc pl-4 mb-2; }
+.chat-prose ol { @apply list-decimal pl-4 mb-2; }
+.chat-prose li { @apply mb-1; }
+.chat-prose code { @apply bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-sm font-mono; }
+.chat-prose pre { @apply bg-gray-100 dark:bg-gray-800 p-3 rounded-lg overflow-x-auto mb-2; }
+.chat-prose pre code { @apply bg-transparent p-0; }
+.chat-prose strong { @apply font-semibold; }
+.chat-prose h1,.chat-prose h2,.chat-prose h3 { @apply font-semibold mt-2 mb-1; }
+
+/* Typing animation */
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+.typing-dot {
+  animation: typing 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
