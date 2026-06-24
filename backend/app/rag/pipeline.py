@@ -1,12 +1,12 @@
 """
-RAG (Retrieval-Augmented Generation) pipeline.
+RAG pipeline — Groq LLM (free) + local FAISS + sentence-transformers.
 
 Flow:
-  1. Embed the user query
-  2. Retrieve top-K similar chunks from the vector store
-  3. Build a context-aware prompt with conversation history
-  4. Generate an answer using OpenAI Chat Completions
-  5. Return the answer + source citations
+  1. Embed query locally (sentence-transformers, free)
+  2. Retrieve top-K chunks from FAISS (local, free)
+  3. Build context-aware prompt with conversation history
+  4. Generate answer via Groq API (free tier)
+  5. Return answer + source citations
 """
 
 from __future__ import annotations
@@ -14,8 +14,7 @@ from __future__ import annotations
 from typing import List, Optional, Tuple
 
 from langchain.schema import Document
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_groq import ChatGroq
 from langchain.schema.messages import HumanMessage, AIMessage, SystemMessage
 
 from app.models.schemas import ChatMessage, SourceChunk
@@ -31,9 +30,10 @@ based ONLY on the provided context documents.
 
 Rules:
 - Base your answer exclusively on the context below.
-- If the answer is not in the context, say "I couldn't find relevant information
-  in the uploaded documents." Do NOT make up information.
-- Cite the source document and page number when available (e.g. [Source: filename.pdf, Page 3]).
+- If the answer is not in the context, say "I couldn't find relevant \
+information in the uploaded documents." Do NOT make up information.
+- Cite the source document and page number when available \
+(e.g. [Source: filename.pdf, Page 3]).
 - Be concise but complete. Use bullet points for lists.
 - Maintain a helpful, professional tone.
 
@@ -43,29 +43,27 @@ Context:
 
 
 def _build_context(chunks: List[Tuple[Document, float]]) -> str:
-    """Format retrieved chunks into a single context string."""
     parts = []
     for i, (doc, score) in enumerate(chunks, start=1):
-        meta = doc.metadata
+        meta     = doc.metadata
         filename = meta.get("filename", "unknown")
-        page = meta.get("page")
-        page_info = f", Page {page}" if page else ""
+        page     = meta.get("page")
+        page_str = f", Page {page}" if page else ""
         parts.append(
-            f"[{i}] Source: {filename}{page_info} (relevance: {score:.2f})\n"
+            f"[{i}] Source: {filename}{page_str} (relevance: {score:.2f})\n"
             f"{doc.page_content}"
         )
     return "\n\n---\n\n".join(parts)
 
 
 def _convert_history(history: List[ChatMessage]):
-    """Convert our schema messages to LangChain message objects."""
-    messages = []
-    for msg in history:
-        if msg.role == "user":
-            messages.append(HumanMessage(content=msg.content))
+    msgs = []
+    for m in history:
+        if m.role == "user":
+            msgs.append(HumanMessage(content=m.content))
         else:
-            messages.append(AIMessage(content=msg.content))
-    return messages
+            msgs.append(AIMessage(content=m.content))
+    return msgs
 
 
 def run_rag_pipeline(
@@ -75,69 +73,52 @@ def run_rag_pipeline(
     top_k: int = 5,
 ) -> Tuple[str, List[SourceChunk]]:
     """
-    Execute the full RAG pipeline for a user query.
-
-    Args:
-        query:                 The user's question.
-        conversation_history:  Prior turns for context.
-        document_ids:          If set, restrict retrieval to these documents.
-        top_k:                 Number of chunks to retrieve.
+    Execute the full RAG pipeline.
 
     Returns:
-        (answer_text, list_of_source_chunks)
+        (answer_text, source_chunks)
     """
     settings = get_settings()
 
-    # ------------------------------------------------------------------
-    # 1. Retrieve relevant chunks
-    # ------------------------------------------------------------------
-    logger.info(f"Retrieving top-{top_k} chunks for query: {query[:80]}...")
-    raw_results = similarity_search(query, top_k=top_k, filter_doc_ids=document_ids)
+    # ── 1. Retrieve ──────────────────────────────────────────────────
+    logger.info(f"Retrieving top-{top_k} chunks for: {query[:80]}...")
+    results = similarity_search(query, top_k=top_k, filter_doc_ids=document_ids)
 
-    if not raw_results:
+    if not results:
         return (
             "I couldn't find any relevant information in the uploaded documents. "
-            "Please make sure you have uploaded documents and try again.",
+            "Please upload a PDF first, then ask your question.",
             [],
         )
 
-    # ------------------------------------------------------------------
-    # 2. Build context string
-    # ------------------------------------------------------------------
-    context = _build_context(raw_results)
+    # ── 2. Build context ─────────────────────────────────────────────
+    context = _build_context(results)
 
-    # ------------------------------------------------------------------
-    # 3. Build prompt messages
-    # ------------------------------------------------------------------
-    system_msg = SystemMessage(content=_SYSTEM_PROMPT.format(context=context))
-    history_msgs = _convert_history(conversation_history[-10:])  # last 10 turns
-    human_msg = HumanMessage(content=query)
+    # ── 3. Build messages ────────────────────────────────────────────
+    system_msg   = SystemMessage(content=_SYSTEM_PROMPT.format(context=context))
+    history_msgs = _convert_history(conversation_history[-10:])
+    human_msg    = HumanMessage(content=query)
+    messages     = [system_msg] + history_msgs + [human_msg]
 
-    messages = [system_msg] + history_msgs + [human_msg]
-
-    # ------------------------------------------------------------------
-    # 4. Call OpenAI
-    # ------------------------------------------------------------------
-    llm = ChatOpenAI(
-        openai_api_key=settings.openai_api_key,
-        model=settings.openai_model,
+    # ── 4. Call Groq (free) ──────────────────────────────────────────
+    llm = ChatGroq(
+        groq_api_key=settings.groq_api_key,
+        model_name=settings.groq_model,
         temperature=0.2,
         max_tokens=1024,
     )
 
-    logger.info(f"Calling OpenAI model: {settings.openai_model}")
+    logger.info(f"Calling Groq model: {settings.groq_model}")
     response = llm.invoke(messages)
-    answer = response.content
+    answer   = response.content
 
-    # ------------------------------------------------------------------
-    # 5. Format source citations
-    # ------------------------------------------------------------------
+    # ── 5. Format citations ──────────────────────────────────────────
     sources: List[SourceChunk] = []
     seen: set = set()
-    for doc, score in raw_results:
-        meta = doc.metadata
+    for doc, score in results:
+        meta  = doc.metadata
         doc_id = meta.get("document_id", "")
-        key = f"{doc_id}_{meta.get('chunk_index', 0)}"
+        key   = f"{doc_id}_{meta.get('chunk_index', 0)}"
         if key in seen:
             continue
         seen.add(key)
@@ -146,10 +127,10 @@ def run_rag_pipeline(
                 document_id=doc_id,
                 filename=meta.get("filename", "unknown"),
                 page=meta.get("page"),
-                content=doc.page_content[:300],  # truncate for UI
+                content=doc.page_content[:300],
                 score=round(score, 4),
             )
         )
 
-    logger.info(f"Generated answer with {len(sources)} source citations")
+    logger.info(f"Answer generated with {len(sources)} source citations")
     return answer, sources

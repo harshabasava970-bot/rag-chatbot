@@ -54,16 +54,16 @@ router = APIRouter()
 @router.get("/health", response_model=HealthResponse, tags=["system"])
 async def health_check() -> HealthResponse:
     """Return current system health status."""
-    from openai import OpenAI
+    from groq import Groq
 
     settings = get_settings()
     openai_ok = False
     try:
-        client = OpenAI(api_key=settings.openai_api_key)
+        client = Groq(api_key=settings.groq_api_key)
         client.models.list()
         openai_ok = True
     except Exception as e:
-        logger.warning(f"OpenAI connectivity check failed: {e}")
+        logger.warning(f"Groq connectivity check failed: {e}")
 
     docs = list_documents()
     return HealthResponse(

@@ -1,6 +1,10 @@
 """
 Application configuration loaded from environment variables.
 Uses pydantic-settings for validation and type coercion.
+
+LLM      : Groq  (free tier – no credit card needed)
+Embeddings: sentence-transformers (100% local – completely free)
+Vector DB : FAISS (local file – completely free)
 """
 
 from __future__ import annotations
@@ -20,25 +24,31 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # OpenAI
-    openai_api_key: str = Field(..., description="OpenAI secret key")
-    openai_model: str = Field(default="gpt-4o-mini")
-    openai_embedding_model: str = Field(default="text-embedding-3-small")
+    # ----------------------------------------------------------------
+    # Groq  (free LLM – https://console.groq.com)
+    # ----------------------------------------------------------------
+    groq_api_key: str = Field(..., description="Groq API key (free)")
+    groq_model: str = Field(default="llama-3.3-70b-versatile")
 
-    # Pinecone (optional – falls back to FAISS when absent)
-    pinecone_api_key: Optional[str] = Field(default=None)
-    pinecone_environment: Optional[str] = Field(default=None)
-    pinecone_index_name: str = Field(default="rag-documents")
+    # ----------------------------------------------------------------
+    # Local embeddings – sentence-transformers (no API, fully free)
+    # ----------------------------------------------------------------
+    embedding_model: str = Field(default="all-MiniLM-L6-v2")
 
+    # ----------------------------------------------------------------
     # App
+    # ----------------------------------------------------------------
     app_env: str = Field(default="development")
     app_host: str = Field(default="0.0.0.0")
     app_port: int = Field(default=8000)
-    port: int = Field(default=8000)  # Render sets $PORT automatically
+    port: int = Field(default=8000)   # Render injects $PORT
+
     log_level: str = Field(default="INFO")
 
-    # CORS
-    allowed_origins: str = Field(default="http://localhost:5173,http://localhost:3000")
+    # CORS – comma-separated list of allowed origins
+    allowed_origins: str = Field(
+        default="http://localhost:5173,http://localhost:3000"
+    )
 
     # Storage
     upload_dir: str = Field(default="./uploads")
@@ -53,12 +63,8 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
 
-    @property
-    def use_pinecone(self) -> bool:
-        return bool(self.pinecone_api_key and self.pinecone_environment)
-
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Cached settings singleton – import and call this everywhere."""
+    """Cached settings singleton."""
     return Settings()

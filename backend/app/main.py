@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Starting RAG Document Search API  (env={settings.app_env})")
-    logger.info(f"Vector store: {'Pinecone' if settings.use_pinecone else 'FAISS (local)'}")
+    logger.info(f"Vector store: FAISS (local, free)")
     logger.info(f"CORS origins: {settings.cors_origins}")
 
     yield  # application runs here
