@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import List, Tuple
 
 import fitz  # PyMuPDF
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 
 from app.utils.config import get_settings
 from app.utils.logger import get_logger

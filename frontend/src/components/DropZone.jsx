@@ -23,8 +23,6 @@ export default function DropZone() {
     const entry = { name: file.name, status: 'uploading', progress: 0, error: null }
     setFileStates((prev) => [...prev, entry])
 
-    const idx = fileStates.length // not reliable for concurrent, use name as key
-
     const onProgress = (pct) =>
       setFileStates((prev) =>
         prev.map((f) => (f.name === file.name ? { ...f, progress: pct } : f))
@@ -46,7 +44,7 @@ export default function DropZone() {
         )
       )
     }
-  }, [uploadMutation, fileStates.length])
+  }, [uploadMutation])
 
   const onDrop = useCallback(
     (acceptedFiles) => {

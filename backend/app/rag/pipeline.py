@@ -13,9 +13,9 @@ from __future__ import annotations
 
 from typing import List, Optional, Tuple
 
-from langchain.schema import Document
+from langchain_core.documents import Document
 from langchain_groq import ChatGroq
-from langchain.schema.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 from app.models.schemas import ChatMessage, SourceChunk
 from app.services.vector_store import similarity_search

@@ -34,7 +34,7 @@ export default function StatusBar() {
             ) : (
               <XCircle className="w-3 h-3 text-red-400" />
             )}
-            OpenAI
+            Groq
           </span>
           <span className="flex items-center gap-1">
             <CheckCircle className="w-3 h-3 text-green-500" />

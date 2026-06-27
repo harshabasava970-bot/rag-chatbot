@@ -9,8 +9,8 @@ import shutil
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from langchain.schema import Document
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_core.documents import Document
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from app.utils.config import get_settings
 from app.utils.logger import get_logger

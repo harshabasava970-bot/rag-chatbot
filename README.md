@@ -1,117 +1,70 @@
-# DocChat – AI Document Search (RAG Chatbot)
+# DocChat — AI Document Search
 
-A production-ready **Retrieval-Augmented Generation (RAG)** application that lets you upload PDF documents and ask natural-language questions about their contents.
+A production-ready **Retrieval-Augmented Generation (RAG)** chatbot that lets you upload PDF documents and ask questions about them in natural language.
 
-![Tech Stack](https://img.shields.io/badge/FastAPI-0.111-green) ![React](https://img.shields.io/badge/React-18-blue) ![LangChain](https://img.shields.io/badge/LangChain-0.2-purple) ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-orange)
+**100% free to run** — uses Groq (free LLM API), sentence-transformers (local embeddings), and FAISS (local vector store).
 
 ---
 
-## Features
+## Tech Stack
 
-| Feature | Details |
+| Layer | Technology |
 |---|---|
-| PDF Upload | Drag-and-drop, multiple files, up to 50 MB each |
-| Text Extraction | PyMuPDF with page-level metadata |
-| Intelligent Chunking | Recursive character splitting (1000 chars, 200 overlap) |
-| Embeddings | OpenAI `text-embedding-3-small` |
-| Vector Store | Pinecone (cloud) or FAISS (local fallback) |
-| LLM | OpenAI `gpt-4o-mini` (configurable) |
-| Conversation Memory | Last 10 turns sent with every request |
-| Source Citations | Each answer includes ranked source chunks |
-| Dark Mode | System preference + manual toggle |
-| Responsive UI | Tailwind CSS, works on mobile |
+| Frontend | React 18, Vite, TailwindCSS, TanStack Query |
+| Backend | FastAPI, Python 3.12 |
+| LLM | Groq API — `llama-3.3-70b-versatile` (free tier) |
+| Embeddings | `all-MiniLM-L6-v2` via sentence-transformers (local, free) |
+| Vector Store | FAISS (local file, free) |
+| PDF Processing | PyMuPDF (fitz) |
 
 ---
 
-## Project Structure
+## Quick Start (Local Dev)
 
-```
-.
-├── backend/
-│   ├── app/
-│   │   ├── api/routes.py          # All FastAPI endpoints
-│   │   ├── models/schemas.py      # Pydantic request/response models
-│   │   ├── rag/pipeline.py        # RAG retrieval + generation logic
-│   │   ├── services/
-│   │   │   ├── document_store.py  # Document metadata persistence
-│   │   │   ├── pdf_processor.py   # PDF extraction + chunking
-│   │   │   └── vector_store.py    # Pinecone / FAISS abstraction
-│   │   ├── utils/
-│   │   │   ├── config.py          # Settings (pydantic-settings)
-│   │   │   └── logger.py          # Structured logger
-│   │   └── main.py                # FastAPI app factory
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── components/            # React UI components
-│   │   ├── hooks/                 # React Query + state hooks
-│   │   ├── services/api.js        # Axios API client
-│   │   └── App.jsx
-│   ├── package.json
-│   ├── vite.config.js
-│   └── vercel.json
-├── docker-compose.yml
-└── README.md
-```
-
----
-
-## Quick Start (Local Development)
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- An OpenAI API key
-
-### 1. Clone & configure
-
-```bash
-git clone https://github.com/harshabasava970-bot/rag-chatbot.git
-cd rag-chatbot
-```
-
-### 2. Backend setup
+### 1. Backend
 
 ```bash
 cd backend
 
 # Create virtual environment
 python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS/Linux
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env – at minimum set OPENAI_API_KEY
-```
+# Edit .env and set GROQ_API_KEY (free at https://console.groq.com)
 
-### 3. Start the backend
-
-```bash
+# Run the API server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-API docs are available at: http://localhost:8000/docs
-
-### 4. Frontend setup
+### 2. Frontend
 
 ```bash
-cd ../frontend
+cd frontend
+
 npm install
-cp .env.example .env
-# Leave VITE_API_URL empty for local dev (Vite proxy handles it)
 npm run dev
+# Open http://localhost:5173
 ```
 
-Open http://localhost:5173 in your browser.
+---
+
+## Docker (Full Stack)
+
+```bash
+# Copy and configure the backend env
+cp backend/.env.example backend/.env
+# Set GROQ_API_KEY in backend/.env
+
+docker-compose up --build
+# Backend: http://localhost:8000
+# API docs: http://localhost:8000/docs
+```
 
 ---
 
@@ -119,134 +72,85 @@ Open http://localhost:5173 in your browser.
 
 ### Backend (`backend/.env`)
 
-| Variable | Required | Description |
+| Variable | Default | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | ✅ | Your OpenAI secret key |
-| `OPENAI_MODEL` | | LLM model (default: `gpt-4o-mini`) |
-| `OPENAI_EMBEDDING_MODEL` | | Embedding model (default: `text-embedding-3-small`) |
-| `PINECONE_API_KEY` | ⚠️ optional | Enables Pinecone; falls back to FAISS if unset |
-| `PINECONE_ENVIRONMENT` | ⚠️ optional | Pinecone cloud region (e.g. `us-east-1`) |
-| `PINECONE_INDEX_NAME` | | Index name (default: `rag-documents`) |
-| `ALLOWED_ORIGINS` | | Comma-separated CORS origins |
-| `CHUNK_SIZE` | | Token chunk size (default: `1000`) |
-| `CHUNK_OVERLAP` | | Chunk overlap (default: `200`) |
-| `TOP_K_RESULTS` | | Default retrieval count (default: `5`) |
+| `GROQ_API_KEY` | *(required)* | Free key from [console.groq.com](https://console.groq.com) |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model to use |
+| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | HuggingFace embedding model |
+| `APP_PORT` | `8000` | Server port |
+| `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS origins (comma-separated) |
+| `UPLOAD_DIR` | `./uploads` | Where PDFs and FAISS index are stored |
+| `MAX_FILE_SIZE_MB` | `50` | Max PDF size |
+| `CHUNK_SIZE` | `1000` | Characters per text chunk |
+| `CHUNK_OVERLAP` | `200` | Overlap between chunks |
+| `TOP_K_RESULTS` | `5` | Number of chunks retrieved per query |
 
 ### Frontend (`frontend/.env`)
 
-| Variable | Description |
-|---|---|
-| `VITE_API_URL` | Backend base URL for production. Leave empty for local dev. |
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_API_URL` | *(empty)* | Backend URL (empty = use Vite proxy locally) |
 
 ---
 
-## API Reference
+## API Endpoints
 
-All endpoints are prefixed with `/api/v1`.
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/v1/upload` | Upload and process a PDF |
+| `GET` | `/api/v1/documents` | List all uploaded documents |
+| `DELETE` | `/api/v1/documents/{id}` | Delete a document |
+| `POST` | `/api/v1/chat` | Ask a question (RAG query) |
+| `GET` | `/api/v1/health` | System health check |
 
-### `GET /health`
-Returns system status, vector store type, OpenAI connectivity, and document count.
-
-### `GET /documents`
-Returns list of all uploaded documents with metadata.
-
-### `POST /upload`
-Upload a PDF file (multipart/form-data, field name `file`).  
-Returns `document_id`, page count, chunk count.
-
-### `DELETE /documents/{id}`
-Deletes document metadata, file, and all vector embeddings.
-
-### `POST /chat`
-```json
-{
-  "query": "What is the main topic of the report?",
-  "conversation_history": [],
-  "document_ids": null,
-  "top_k": 5
-}
-```
-Returns answer text and ranked source chunks.
+Interactive API docs available at `/docs` when the backend is running.
 
 ---
 
-## Docker Deployment
+## Deployment
 
-### Build and run
+### Frontend → Vercel
 
 ```bash
-# Copy and fill in environment variables
-cp backend/.env.example backend/.env
-# Edit backend/.env
-
-docker-compose up --build -d
+cd frontend
+# Set VITE_API_URL to your deployed backend URL in Vercel environment variables
+vercel deploy
 ```
 
-The API will be available at http://localhost:8000.
+### Backend → Render / Railway / Fly.io
 
-### Check health
+1. Point to the `backend/` directory
+2. Set all environment variables from `.env.example`
+3. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
-```bash
-curl http://localhost:8000/api/v1/health
-```
-
-### Stop
-
-```bash
-docker-compose down
-```
-
-Data (uploads + FAISS index) is persisted in the `uploads_data` Docker volume.
+> Note: Add your deployed frontend URL to `ALLOWED_ORIGINS` in the backend config.
 
 ---
 
-## Vercel Deployment (Frontend)
-
-1. Push the repository to GitHub.
-2. Go to [vercel.com](https://vercel.com) → New Project → import your repo.
-3. Set **Root Directory** to `frontend`.
-4. Add environment variable:
-   - `VITE_API_URL` = your backend URL (e.g. `https://your-backend.fly.dev`)
-5. Click **Deploy**.
-
-The `vercel.json` in `frontend/` already configures SPA routing rewrites.
-
----
-
-## Backend Cloud Deployment (Docker)
-
-The backend can be deployed to any service that runs Docker containers:
-
-- **Fly.io**: `fly launch` from the `backend/` directory
-- **Railway**: connect repo, set root to `backend/`, add env vars
-- **Render**: New Web Service → Docker → add env vars
-- **AWS ECS / Google Cloud Run**: push the Docker image and configure env vars
-
-Ensure `ALLOWED_ORIGINS` includes your Vercel frontend URL.
-
----
-
-## Architecture
+## Project Structure
 
 ```
-User → React (Vite)
-         │  POST /chat
-         ▼
-      FastAPI ──→ OpenAI Embeddings ──→ Pinecone / FAISS
-         │                                    │
-         │          similarity_search         │
-         │ ◄──────────────────────────────────┘
-         │
-         │  top-K chunks + conversation history
-         ▼
-      ChatOpenAI (gpt-4o-mini) → grounded answer + citations
-         │
-         ▼
-      React chat bubble with collapsible sources
+├── backend/
+│   ├── app/
+│   │   ├── api/routes.py          # FastAPI route handlers
+│   │   ├── models/schemas.py      # Pydantic request/response models
+│   │   ├── rag/pipeline.py        # RAG pipeline (retrieve → generate → cite)
+│   │   ├── services/
+│   │   │   ├── document_store.py  # JSON-backed document metadata store
+│   │   │   ├── pdf_processor.py   # PDF text extraction + chunking
+│   │   │   └── vector_store.py    # FAISS embeddings + similarity search
+│   │   ├── utils/
+│   │   │   ├── config.py          # Pydantic settings (env vars)
+│   │   │   └── logger.py          # Structured logger
+│   │   └── main.py                # FastAPI app factory
+│   ├── requirements.txt
+│   └── Dockerfile
+│
+└── frontend/
+    ├── src/
+    │   ├── components/            # UI components
+    │   ├── hooks/                 # React hooks (useChat, useDocuments, useDarkMode)
+    │   ├── services/api.js        # Axios API client
+    │   └── App.jsx                # Root layout
+    └── package.json
 ```
-
----
-
-## License
-
-MIT
