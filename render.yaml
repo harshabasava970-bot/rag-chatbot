@@ -4,13 +4,13 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
     plan: free
     envVars:
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
-      - key: OPENAI_EMBEDDING_MODEL
-        value: text-embedding-3-small
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: EMBEDDING_MODEL
+        value: all-MiniLM-L6-v2
       - key: APP_ENV
         value: production
       - key: LOG_LEVEL
@@ -25,10 +25,6 @@ services:
         value: "200"
       - key: TOP_K_RESULTS
         value: "5"
-      - key: PINECONE_API_KEY
-        value: ""
-      - key: PINECONE_ENVIRONMENT
-        value: ""
-      - key: PINECONE_INDEX_NAME
-        value: rag-documents
-      # OPENAI_API_KEY and ALLOWED_ORIGINS must be set manually in Render dashboard
+      # These must be set manually in the Render dashboard:
+      # GROQ_API_KEY  → your free key from https://console.groq.com
+      # ALLOWED_ORIGINS → your Vercel frontend URL, e.g. https://your-app.vercel.app
