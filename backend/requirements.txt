@@ -11,7 +11,7 @@ langchain-community==0.2.5
 langchain-huggingface==0.0.3
 langchain-text-splitters==0.2.2
 
-# numpy pinned for langchain compatibility
+# numpy - compatible with langchain and faiss
 numpy>=1.24.0,<2.0.0
 
 # Groq (LLM - free tier)
@@ -20,8 +20,8 @@ groq==0.9.0
 # Local embeddings - 100% free, no API needed
 sentence-transformers==3.0.1
 
-# Vector stores
-faiss-cpu==1.7.4
+# Vector stores - no version pin so pip picks the right wheel for the platform
+faiss-cpu
 
 # PDF processing
 pypdf==4.2.0
