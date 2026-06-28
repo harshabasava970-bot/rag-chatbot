@@ -7,6 +7,8 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
     plan: free
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
       - key: EMBEDDING_MODEL
@@ -25,6 +27,6 @@ services:
         value: "200"
       - key: TOP_K_RESULTS
         value: "5"
-      # These must be set manually in the Render dashboard:
-      # GROQ_API_KEY  → your free key from https://console.groq.com
-      # ALLOWED_ORIGINS → your Vercel frontend URL, e.g. https://your-app.vercel.app
+      # Set these manually in Render dashboard:
+      # GROQ_API_KEY  → free key from https://console.groq.com
+      # ALLOWED_ORIGINS → your Vercel URL e.g. https://rag-chatbot-xyz.vercel.app
